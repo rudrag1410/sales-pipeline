@@ -1,0 +1,44 @@
+.syncChip {
+  min-width: 10.5rem;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 1.75rem;
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: 0.875rem;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+button.syncChip {
+  cursor: pointer;
+}
+button.syncChip:hover {
+  filter: brightness(0.96);
+}
+.syncOk {
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+.syncBusy {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+.syncBad {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

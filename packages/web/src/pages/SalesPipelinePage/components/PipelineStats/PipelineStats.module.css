@@ -1,0 +1,40 @@
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  margin-left: auto;
+}
+.stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+}
+.label {
+  color: var(--color-text-muted);
+}
+.value {
+  min-width: 4ch;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.action {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: 0.125rem var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.clickable .action:hover {
+  background: var(--color-warning-soft);
+}
+.clickable .value {
+  color: var(--color-warning);
+}

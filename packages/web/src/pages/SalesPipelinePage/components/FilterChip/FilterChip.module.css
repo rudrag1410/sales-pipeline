@@ -1,0 +1,55 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.875rem;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+.chip:hover {
+  border-color: var(--color-accent);
+}
+.active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  height: 100%;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.active .trigger {
+  padding-right: var(--space-1);
+}
+.summary {
+  font-weight: 650;
+}
+.clear {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0 0.875rem 0.875rem 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.clear:hover {
+  background: var(--color-surface-hover);
+}

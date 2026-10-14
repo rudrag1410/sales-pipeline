@@ -1,0 +1,71 @@
+.field {
+  display: grid;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+.control {
+  box-sizing: border-box;
+  height: var(--control-height);
+  min-height: var(--control-height);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.controlFocused {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+.controlDisabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.valueContainer {
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  line-height: 1;
+}
+.singleValue {
+  color: var(--color-text);
+}
+.placeholder {
+  color: var(--color-text-faint);
+}
+.indicator {
+  padding: 0 var(--space-1);
+  color: var(--color-text-faint);
+}
+.menu {
+  margin-top: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+.option {
+  padding: 0.375rem var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.optionFocused {
+  background: var(--color-surface-hover);
+}
+.optionSelected {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: 600;
+}
+.optionDisabled {
+  color: var(--color-text-faint);
+  cursor: not-allowed;
+}
+.noOptions {
+  padding: var(--space-2);
+  color: var(--color-text-muted);
+}

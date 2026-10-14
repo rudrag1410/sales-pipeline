@@ -1,0 +1,32 @@
+.wrapper {
+  display: inline-flex;
+}
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.25rem 0.125rem 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+.trigger svg {
+  opacity: 0.55;
+}
+.trigger:hover svg,
+.trigger:focus-visible svg,
+.trigger[aria-expanded='true'] svg {
+  opacity: 1;
+}
+.trigger:hover {
+  background: var(--color-surface-hover);
+}
+.trigger:disabled {
+  cursor: default;
+}
+.spacer {
+  display: inline-block;
+  width: 0.875rem;
+}

@@ -1,0 +1,30 @@
+.indicator {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.saving {
+  color: var(--color-info);
+}
+.failed,
+.rejected {
+  color: var(--color-danger);
+}
+.conflict {
+  color: var(--color-warning);
+}
+.remote {
+  color: var(--color-accent);
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

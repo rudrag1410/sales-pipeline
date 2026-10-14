@@ -1,0 +1,23 @@
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  padding: 2px 0.25rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+.sortButton:hover {
+  background: var(--color-surface-hover);
+}
+.selectHeader {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}

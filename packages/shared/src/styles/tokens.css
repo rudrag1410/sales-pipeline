@@ -1,0 +1,103 @@
+:root {
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f3f6;
+  --color-surface-hover: #eef1f6;
+  --color-border: #dfe3ea;
+  --color-border-strong: #c5ccd8;
+  --color-text: #1b2230;
+  --color-text-muted: #566074;
+  --color-text-faint: #6b7588;
+  --color-accent: #2557d6;
+  --color-accent-hover: #1d49b5;
+  --color-accent-soft: #e6edfd;
+  --color-focus: #2557d6;
+  --color-success: #17794a;
+  --color-success-soft: #e3f4ec;
+  --color-warning: #8a5a00;
+  --color-warning-soft: #fff1d6;
+  --color-danger: #b42318;
+  --color-danger-soft: #fde8e6;
+  --color-info: #1c5fa8;
+  --color-info-soft: #e3eefa;
+  --color-selected: #e8effd;
+
+  --font-sans: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --text-xs: 0.6875rem;
+  --text-sm: 0.7812rem;
+  --text-md: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.25rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.625rem;
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 6%);
+  --shadow-lg: 0 8px 24px rgb(16 24 40 / 14%);
+  --control-height: 2rem;
+  --control-height-sm: 1.625rem;
+  --row-height: 2.25rem;
+  --z-dropdown: 40;
+  --z-drawer: 60;
+  --z-dialog: 70;
+  --z-toast: 90;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  line-height: 1.4;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+html {
+  font-size: 16px;
+}
+@media (min-width: 1680px) {
+  html {
+    font-size: 17px;
+  }
+}
+@media (min-width: 1920px) {
+  html {
+    font-size: 18px;
+  }
+}
+@media (min-width: 2400px) {
+  html {
+    font-size: 21px;
+  }
+}
+@media (min-width: 3200px) {
+  html {
+    font-size: 25px;
+  }
+}
