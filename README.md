@@ -11,7 +11,6 @@ pnpm install
 pnpm dev          # http://localhost:5173
 ```
 
-
 | Command             | What it does                               |
 | ------------------- | ------------------------------------------ |
 | `pnpm dev`          | Start the app                              |
@@ -21,9 +20,6 @@ pnpm dev          # http://localhost:5173
 | `pnpm format:check` | Prettier check (`pnpm format` to fix)      |
 | `pnpm test`         | Vitest: data, model and UI tests           |
 | `pnpm verify`       | Format check, lint, typecheck, test, build |
-
-
-
 
 ## What you can do
 
@@ -37,7 +33,6 @@ pnpm dev          # http://localhost:5173
 
 ### When saving goes wrong
 
-
 | What happens                              | What you see                                                      | What you can do                             |
 | ----------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------- |
 | The request fails (network, 503, offline) | Your edit stays on the row as **Not saved**, with the reason      | **Retry** or **Discard change**             |
@@ -45,11 +40,9 @@ pnpm dev          # http://localhost:5173
 | Someone else saved the deal first         | The row says **Conflict**; the drawer shows your value and theirs | **Apply mine on latest** or **Keep theirs** |
 | The server refuses the change             | The deal goes back to its saved value and says why                | **Dismiss**                                 |
 
-
 Stage rules: an open deal can move anywhere. A Won deal can only reopen to Negotiation, and a Lost deal only to New Lead or Contacted. The value of a closed deal is locked. A deal that's still saving can't be edited again until it's done.
 
 ### Simulation settings (sliders icon)
-
 
 | Setting                                    | What it does                                                                                     |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
@@ -60,11 +53,9 @@ Stage rules: an open deal can move anywhere. A Won deal can only reopen to Negot
 | Fail next save                             | Forces one failure, of either kind, on the next save                                             |
 | A teammate edits the deal you just changed | Changes the deal you just edited (or the open one) right now, so you can trigger a conflict      |
 
-
 Teammates' edits show up in place with a small marker. Rows never move on their own: the order only changes when you change the filters.
 
 ## Keyboard
-
 
 | Keys                     | What it does                                           |
 | ------------------------ | ------------------------------------------------------ |
@@ -77,7 +68,6 @@ Teammates' edits show up in place with a small marker. Rows never move on their 
 | `Enter`                  | Open the active deal                                   |
 | `M`                      | Move the active deal to another stage                  |
 | `Esc`                    | Close the open menu, dialog or drawer; clear selection |
-
 
 In search, `↓` or `Enter` goes into the table, and `Esc` clears the text, then leaves the box. The first Tab stop is a "Skip to deals table" link. The table keeps focus on itself and points at the active row with `aria-activedescendant`.
 
@@ -102,4 +92,3 @@ packages/web/src
 - `DealSaver` sends edits in chunks and records each result in the store. It never retries by itself: a failed save stays visible until you press Retry.
 - **Filtering and sorting are in memory**, about 5 ms to filter and 20–35 ms to sort 50,000 deals (timed in Node). Row order is worked out when the query changes, so rows don't jump.
 - **The table is virtual** (TanStack Virtual), so about 25 rows are in the DOM.
-

@@ -1,5 +1,5 @@
 import type { KeyboardEvent } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useLatestCallback } from './useLatestCallback';
 
@@ -13,16 +13,20 @@ export interface FocusScopeOptions {
 
 export const useFocusScope = ({ trap, onEscape }: FocusScopeOptions) => {
   const escape = useLatestCallback(onEscape);
+  const [previouslyFocused] = useState(() =>
+    document.activeElement instanceof HTMLElement ? document.activeElement : null,
+  );
 
-  const ref = useCallback((container: HTMLElement | null) => {
-    if (!container) return;
-    const previouslyFocused =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    (container.querySelector<HTMLElement>('[data-autofocus]') ?? container).focus();
-    return () => {
-      if (previouslyFocused?.isConnected) previouslyFocused.focus();
-    };
-  }, []);
+  const ref = useCallback(
+    (container: HTMLElement | null) => {
+      if (!container) return;
+      (container.querySelector<HTMLElement>('[data-autofocus]') ?? container).focus();
+      return () => {
+        if (previouslyFocused?.isConnected) previouslyFocused.focus();
+      };
+    },
+    [previouslyFocused],
+  );
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.key === 'Escape') {

@@ -137,6 +137,19 @@ describe('SalesPipelinePage', () => {
     });
   });
 
+  it('returns focus to the table after the move dialog closes with Escape', async () => {
+    const user = userEvent.setup();
+    renderApp(300);
+    grid().focus();
+    await user.keyboard('m');
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(grid()).toHaveFocus();
+  });
+
   it('closes the drawer when clicking outside it', async () => {
     const user = userEvent.setup();
     renderApp(300);
