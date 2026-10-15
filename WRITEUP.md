@@ -31,8 +31,20 @@ Teammates' edits update the row where it is, with a small marker, and the row do
 
 ## With more time
 
-- Test with a screen reader, and run browser tests in CI.
-- Retry with backoff for short network errors, if the Retry button turns out to be too slow.
-- Cursor-based paging (the fake server uses offsets, which can shift when teammates add or remove deals), and Undo for bulk changes.
-- Real activity history, and a real backend in the monorepo to replace the fake one.
+**Making it hold up at scale**
+
+- **A real backend.** The monorepo is ready for it. I'd move the shared types and the stage rules into their own package, so the server and the UI enforce exactly the same rules, and swap `FakeApi` for an HTTP client.
+- **Cursor paging.** The fake server pages by offset, which can shift when a teammate adds or removes a deal while you scroll. A cursor ("rows after this one") doesn't have that problem and stays fast at any depth.
+- **Live updates over WebSocket or SSE.** Today the fake server pushes changes. With a real one I'd send small "deal changed" events and only update rows that are loaded, so 20 people editing doesn't mean 20 people refetching.
+- **Bulk changes as a background job.** Moving 5,000 deals from the browser means the tab has to stay open. I'd send one request ("move everything matching this filter to Lost"), let the server do it, and show progress, with a safe retry key so it never runs twice.
+- **Proper idempotency keys and retry with backoff.** Right now I detect "already saved" by comparing values. Real keys are safer, and an automatic retry for short network errors would mean fewer clicks, as long as failures stay visible.
+- **Measure it in the browser.** My timings are from Node. I'd add real-browser performance tests in CI, with a 50,000-row and a 500,000-row run.
+
+**Features I'd add next**
+
+- **A "Today" list per person.** Rank deals by value, how overdue they are and how long they've been idle, so "which deals do I work on today?" has a real answer, not just a filter.
+- **Undo for bulk moves,** and a log of who changed what, so a quarter-end mistake can be reversed.
+- **Command palette.** `⌘K` already searches. It could also run actions like "move selected to Lost" or "show my stale deals".
+- **Inline editing of the value and owner** in the table, and saved views that you can share with the team.
+- **Presence.** Show who has a deal open, so two people don't edit the same one by accident.
 
