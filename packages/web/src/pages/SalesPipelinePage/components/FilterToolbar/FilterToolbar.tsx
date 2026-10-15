@@ -102,6 +102,15 @@ export const FilterToolbar = ({
     setMax(query.valueMax === null ? '' : String(query.valueMax));
   }
 
+  const rangeError =
+    query.valueMin !== null && query.valueMax !== null && query.valueMin > query.valueMax
+      ? 'Max is lower than min'
+      : undefined;
+  const dateError =
+    query.closeFrom && query.closeTo && query.closeFrom > query.closeTo
+      ? 'End is before the start'
+      : undefined;
+
   return (
     <div className={styles.filters} role="group" aria-label="Filters">
       <Dropdown
@@ -175,6 +184,7 @@ export const FilterToolbar = ({
           />
           <Input
             label="Max value (₹)"
+            error={rangeError}
             inputMode="numeric"
             maxLength={MAX_DIGITS}
             placeholder="Any"
@@ -212,6 +222,7 @@ export const FilterToolbar = ({
           />
           <Input
             label="Close to"
+            error={dateError}
             type="date"
             value={query.closeTo ?? ''}
             onChange={(e) => {

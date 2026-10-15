@@ -8,6 +8,7 @@ import type { DealResults } from './view';
 export interface LoadStatus {
   isLoading: boolean;
   error: string | null;
+  rowsError: string | null;
   reload: () => void;
 }
 
@@ -27,6 +28,7 @@ export interface PipelineActions {
   applyMine: (dealId: DealId) => void;
   discard: (dealId: DealId) => void;
   clearRemoteMarks: () => void;
+  selectAllMatching: () => Promise<ReadonlyArray<DealId>>;
 }
 
 export interface SimulationControls {
@@ -39,6 +41,7 @@ export interface SimulationControls {
 export interface SalesPipeline {
   status: LoadStatus;
   results: DealResults;
+  requestRange: (start: number, end: number) => void;
   owners: ReadonlyArray<Owner>;
   ownerName: (ownerId: string) => string;
   saveStates: ReadonlyMap<DealId, SaveState>;

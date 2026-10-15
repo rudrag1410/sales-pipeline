@@ -66,3 +66,13 @@ export const CURRENT_OWNER_ID = 'owner-01';
 export const FILTER_DEBOUNCE_MS = 300;
 export const GRID_DOM_ID = 'deals-grid';
 export const DEFAULT_VIEW_ID = 'all';
+
+export const EMPTY_STAGE_COUNTS: Readonly<Record<StageId, number>> = {
+  [StageId.NewLead]: 0,
+  [StageId.Contacted]: 0,
+  [StageId.DemoDone]: 0,
+  [StageId.ProposalSent]: 0,
+  [StageId.Negotiation]: 0,
+  [StageId.Won]: 0,
+  [StageId.Lost]: 0,
+};

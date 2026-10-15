@@ -1,4 +1,5 @@
 import { Button, Checkbox, Dialog, Input, Select } from '@pipeline/shared';
+import { useState } from 'react';
 
 import { InjectedFailure } from '@/constants/enums';
 import type { SimulationControls } from '@/types/pipeline';
@@ -15,6 +16,36 @@ const TEAMMATE_OPTIONS = [
 
 const toNumber = (value: string, fallback: number) =>
   value === '' || Number.isNaN(Number(value)) ? fallback : Number(value);
+
+interface NumberFieldProps {
+  label: string;
+  value: number;
+  min: number;
+  max?: number;
+  onCommit: (value: number) => void;
+}
+
+const NumberField = ({ label, value, min, max, onCommit }: NumberFieldProps) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <Input
+      label={label}
+      type="number"
+      inputMode="numeric"
+      min={min}
+      {...(max === undefined ? {} : { max })}
+      value={draft ?? String(value)}
+      onChange={(event) => {
+        const text = event.target.value;
+        setDraft(text);
+        if (text !== '') onCommit(toNumber(text, min));
+      }}
+      onBlur={() => {
+        setDraft(null);
+      }}
+    />
+  );
+};
 
 export interface SimulationPanelProps {
   simulation: SimulationControls;
@@ -40,34 +71,29 @@ export const SimulationPanel = ({ simulation, openDealId, onClose }: SimulationP
           }}
         />
         <div className={styles.grid2}>
-          <Input
+          <NumberField
             label="Latency min (ms)"
-            type="number"
             min={0}
             value={config.latencyMinMs}
-            onChange={(event) => {
-              set({ latencyMinMs: toNumber(event.target.value, 0) });
+            onCommit={(latencyMinMs) => {
+              set({ latencyMinMs });
             }}
           />
-          <Input
+          <NumberField
             label="Latency max (ms)"
-            type="number"
             min={0}
             value={config.latencyMaxMs}
-            onChange={(event) => {
-              set({ latencyMaxMs: toNumber(event.target.value, 0) });
+            onCommit={(latencyMaxMs) => {
+              set({ latencyMaxMs });
             }}
           />
-          <Input
+          <NumberField
             label="Save failure rate (%)"
-            type="number"
             min={0}
-            max={100}
+            max={PERCENT}
             value={Math.round(config.failureRate * PERCENT)}
-            onChange={(event) => {
-              set({
-                failureRate: Math.min(1, Math.max(0, toNumber(event.target.value, 0) / PERCENT)),
-              });
+            onCommit={(percent) => {
+              set({ failureRate: Math.min(1, Math.max(0, percent / PERCENT)) });
             }}
           />
           <Select

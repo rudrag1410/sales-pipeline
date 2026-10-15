@@ -1,4 +1,4 @@
-import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import {
   createContext,
@@ -18,7 +18,6 @@ import type { SimulationConfig } from '@/types/api';
 import type { Deal, DealId, Owner } from '@/types/deal';
 import type { SaveState, Services } from '@/types/store';
 
-const DEALS_QUERY_KEY = ['deals'];
 const ServicesContext = createContext<Services | null>(null);
 
 export const DealsProvider = ({
@@ -43,24 +42,11 @@ const useServices = (): Services => {
   return services;
 };
 
-export const useDealsLoader = () => {
-  const { store, api } = useServices();
-  return useQuery({
-    queryKey: DEALS_QUERY_KEY,
-    queryFn: async () => {
-      const deals = await api.list();
-      store.load(deals);
-      return deals.length;
-    },
-    ...(store.isLoaded() ? { initialData: store.getDeals().length } : {}),
-  });
-};
-
 export const useDealsStore = (): DealsStore => useServices().store;
 export const useDealSaver = (): DealSaver => useServices().saver;
 export const useFakeApi = (): FakeApi => useServices().api;
 
-export const useDeals = (): ReadonlyArray<Deal> => {
+export const useDeals = (): ReadonlyMap<DealId, Deal> => {
   const store = useDealsStore();
   return useStore(store.zustand, (state) => state.deals);
 };

@@ -9,7 +9,7 @@ const setup = (count = 300) => {
     config: { latencyMinMs: 0, latencyMaxMs: 0, failureRate: 0 },
   });
   const find = (predicate: (deal: Deal) => boolean): Deal => {
-    const deal = services.store.getDeals().find(predicate);
+    const deal = [...services.store.getDeals().values()].find(predicate);
     if (!deal) throw new Error('fixture deal not found');
     return deal;
   };
@@ -77,8 +77,7 @@ describe('DealSaver', () => {
 
   it('saves a large bulk change in bounded chunks and reports partial failure', async () => {
     const { store, api, saver } = setup(1500);
-    const targets = store
-      .getDeals()
+    const targets = [...store.getDeals().values()]
       .filter((d) => d.stage === StageId.NewLead)
       .slice(0, 220);
     let inFlight = 0;

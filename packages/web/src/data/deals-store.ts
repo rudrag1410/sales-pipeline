@@ -6,21 +6,21 @@ import type { UpdateItem } from '@/types/api';
 import type { ChangeEntry, Deal, DealId, Owner } from '@/types/deal';
 import type { DealChange, EditResult, SaveState } from '@/types/store';
 
-import { searchHaystack } from './deal-query';
 import { patchIsNoop, validatePatch } from './deal-rules';
 import { generateOwners } from './seed-data';
 
 const HISTORY_LIMIT = 30;
 
 interface PipelineState {
-  loaded: boolean;
-  deals: ReadonlyArray<Deal>;
+  revision: number;
+  deals: ReadonlyMap<DealId, Deal>;
   saveStates: ReadonlyMap<DealId, SaveState>;
   remoteMarks: ReadonlyMap<DealId, string>;
 }
 
 interface Draft {
-  deals: Deal[];
+  bump: boolean;
+  deals: Map<DealId, Deal>;
   dealsCopied: boolean;
   saveStates: Map<DealId, SaveState>;
   remoteMarks: Map<DealId, string>;
@@ -28,40 +28,35 @@ interface Draft {
 
 export class DealsStore {
   readonly owners: ReadonlyArray<Owner> = generateOwners();
-  haystacks: ReadonlyArray<string> = [];
   readonly zustand;
-  private readonly indexById = new Map<DealId, number>();
   private readonly history = new Map<DealId, ChangeEntry[]>();
   private readonly bootedAt = performance.now();
   private draft: Draft | null = null;
 
   constructor() {
     this.zustand = createStore<PipelineState>(() => ({
-      loaded: false,
-      deals: [],
+      revision: 0,
+      deals: new Map(),
       saveStates: new Map(),
       remoteMarks: new Map(),
     }));
   }
 
-  load = (deals: ReadonlyArray<Deal>) => {
-    this.indexById.clear();
-    deals.forEach((deal, index) => this.indexById.set(deal.id, index));
-    this.haystacks = deals.map(searchHaystack);
-    this.zustand.setState({ loaded: true, deals });
+  merge = (incoming: ReadonlyArray<Deal>) => {
+    this.transact((draft) => {
+      for (const deal of incoming) {
+        const existing = draft.deals.get(deal.id);
+        if (!existing || existing.version < deal.version) this.write(draft, deal);
+      }
+    });
   };
 
-  isLoaded = (): boolean => this.zustand.getState().loaded;
-
   subscribe = (listener: () => void) => this.zustand.subscribe(listener);
-  getDeals = (): ReadonlyArray<Deal> => this.zustand.getState().deals;
+  getDeals = (): ReadonlyMap<DealId, Deal> => this.zustand.getState().deals;
   getSaveStates = (): ReadonlyMap<DealId, SaveState> => this.zustand.getState().saveStates;
   getRemoteMarks = (): ReadonlyMap<DealId, string> => this.zustand.getState().remoteMarks;
 
-  get = (id: DealId): Deal | undefined => {
-    const index = this.indexById.get(id);
-    return index === undefined ? undefined : (this.draft?.deals ?? this.getDeals())[index];
-  };
+  get = (id: DealId): Deal | undefined => (this.draft?.deals ?? this.getDeals()).get(id);
 
   historyOf = (id: DealId): ReadonlyArray<ChangeEntry> =>
     [...(this.history.get(id) ?? [])].reverse();
@@ -110,6 +105,7 @@ export class DealsStore {
       const state = draft.saveStates.get(saved.id);
       draft.saveStates.delete(saved.id);
       if (state) this.record(state.before, saved, by);
+      draft.bump = true;
       this.write(draft, saved);
     });
   };
@@ -132,6 +128,7 @@ export class DealsStore {
         message: 'Someone else changed this deal first',
       });
       this.record(state.before, current, 'Someone else');
+      draft.bump = true;
       this.write(draft, current);
     });
   };
@@ -189,6 +186,7 @@ export class DealsStore {
         draft.remoteMarks.set(deal.id, by);
       }
       this.record(current, deal, by);
+      draft.bump = true;
       this.write(draft, deal);
     });
   };
@@ -208,7 +206,8 @@ export class DealsStore {
     if (this.draft) return change(this.draft);
     const state = this.zustand.getState();
     const draft: Draft = {
-      deals: state.deals as Deal[],
+      bump: false,
+      deals: state.deals as Map<DealId, Deal>,
       dealsCopied: false,
       saveStates: new Map(state.saveStates),
       remoteMarks: new Map(state.remoteMarks),
@@ -219,6 +218,7 @@ export class DealsStore {
     } finally {
       this.draft = null;
       this.zustand.setState({
+        revision: state.revision + (draft.bump ? 1 : 0),
         deals: draft.deals,
         saveStates: draft.saveStates,
         remoteMarks: draft.remoteMarks,
@@ -227,13 +227,11 @@ export class DealsStore {
   }
 
   private write = (draft: Draft, deal: Deal) => {
-    const index = this.indexById.get(deal.id);
-    if (index === undefined) return;
     if (!draft.dealsCopied) {
-      draft.deals = draft.deals.slice();
+      draft.deals = new Map(draft.deals);
       draft.dealsCopied = true;
     }
-    draft.deals[index] = deal;
+    draft.deals.set(deal.id, deal);
   };
 
   private record = (before: Deal, after: Deal, by: string) => {

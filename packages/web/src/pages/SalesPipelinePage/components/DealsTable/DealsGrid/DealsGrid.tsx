@@ -3,7 +3,7 @@ import type { ColumnSizingState, SortingState, VisibilityState } from '@tanstack
 import { getCoreRowModel, useReactTable } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { CSSProperties } from 'react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { StageId } from '@/constants/enums';
 import { SortDirection } from '@/constants/enums';
@@ -12,13 +12,14 @@ import { DealRow } from '@/pages/SalesPipelinePage/components/DealsTable/DealRow
 import type { DealsTableProps } from '@/pages/SalesPipelinePage/components/DealsTable/DealsTable';
 import { GridEmpty } from '@/pages/SalesPipelinePage/components/DealsTable/GridEmpty/GridEmpty';
 import { GridHeader } from '@/pages/SalesPipelinePage/components/DealsTable/GridHeader/GridHeader';
+import { RowSkeleton } from '@/pages/SalesPipelinePage/components/DealsTable/RowSkeleton/RowSkeleton';
 import { SelectAllControl } from '@/pages/SalesPipelinePage/components/DealsTable/SelectAllControl/SelectAllControl';
 import { TABLE_COLUMNS } from '@/pages/SalesPipelinePage/components/DealsTable/table-columns';
 import { useRootFontSize } from '@/pages/SalesPipelinePage/hooks/useRootFontSize';
 import { SELECT_COLUMN_ID } from '@/pages/SalesPipelinePage/model/columns';
 import { toggleSelected } from '@/pages/SalesPipelinePage/model/selection';
 import type { SortField } from '@/types/deal';
-import type { RowData } from '@/types/view';
+import type { ColumnId, RowData } from '@/types/view';
 
 import styles from './DealsGrid.module.css';
 import { useGridKeyboard } from './useGridKeyboard';
@@ -49,10 +50,13 @@ export const DealsGrid = ({
   onMoveDeal,
   onMoveStage,
   onClearFilters,
+  onRangeChange,
+  onSelectAllMatching,
+  selectingAll,
   columnSizing,
   onColumnSizingChange,
 }: DealsGridProps) => {
-  const { total, matches, deals } = results;
+  const { total, dealAt } = results;
   const rootFontPx = useRootFontSize();
   const scale = rootFontPx / BASE_FONT_PX;
   const rowHeightPx = ROW_HEIGHT_REM * rootFontPx;
@@ -69,7 +73,12 @@ export const DealsGrid = ({
   });
   const items = virtualizer.getVirtualItems();
 
-  const dealAt = (index: number) => deals[matches[index] ?? -1];
+  const firstVisible = items[0]?.index ?? 0;
+  const lastVisible = items.at(-1)?.index ?? 0;
+  useEffect(() => {
+    onRangeChange(firstVisible, lastVisible);
+  }, [firstVisible, lastVisible, onRangeChange]);
+
   const data = items.flatMap((item): RowData[] => {
     const deal = dealAt(item.index);
     return deal ? [{ index: item.index, deal }] : [];
@@ -109,7 +118,8 @@ export const DealsGrid = ({
     '--total-width': `${table.getTotalSize() * scale}px`,
   } as CSSProperties;
 
-  const rows = table.getRowModel().rows;
+  const rowsByIndex = new Map(table.getRowModel().rows.map((row) => [row.original.index, row]));
+  const columnIds = visibleColumns.map((column) => column.id as ColumnId);
   const visibleIds = data.map((row) => row.deal.id);
   const nowMinute = Math.floor(now() / MINUTE_MS) * MINUTE_MS;
 
@@ -182,7 +192,8 @@ export const DealsGrid = ({
               total={total}
               selection={selection}
               visibleIds={visibleIds}
-              allIds={() => matches.flatMap((index) => deals[index]?.id ?? [])}
+              selectingAll={selectingAll}
+              onSelectAllMatching={onSelectAllMatching}
               onSelectionChange={onSelectionChange}
             />
           )}
@@ -195,9 +206,17 @@ export const DealsGrid = ({
             style={{ height: virtualizer.getTotalSize() }}
             role="presentation"
           >
-            {rows.map((row) => {
-              const item = items.find((candidate) => candidate.index === row.original.index);
-              if (!item) return null;
+            {items.map((item) => {
+              const row = rowsByIndex.get(item.index);
+              if (!row)
+                return (
+                  <RowSkeleton
+                    key={`skeleton-${item.index}`}
+                    index={item.index}
+                    top={item.start}
+                    columnIds={columnIds}
+                  />
+                );
               return (
                 <DealRow
                   key={row.id}

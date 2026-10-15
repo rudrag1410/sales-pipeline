@@ -51,7 +51,7 @@ export const createServices = ({
     { ...DEFAULT_SIMULATION, ...(useSavedConfig ? loadSavedConfig() : {}), ...config },
     store.now,
   );
-  if (deals) store.load(deals);
+  if (deals) store.merge(deals);
   const queryClient = createQueryClient();
   return { store, api, queryClient, saver: new DealSaver(store, api, queryClient) };
 };

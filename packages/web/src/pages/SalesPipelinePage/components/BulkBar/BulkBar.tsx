@@ -2,7 +2,7 @@ import { Button } from '@pipeline/shared';
 
 import { StageId } from '@/constants/enums';
 import { STAGE_LABELS } from '@/constants/pipeline';
-import { addSelected, EMPTY_SELECTION } from '@/pages/SalesPipelinePage/model/selection';
+import { EMPTY_SELECTION } from '@/pages/SalesPipelinePage/model/selection';
 import type { Selection } from '@/types/view';
 
 import styles from './BulkBar.module.css';
@@ -10,7 +10,8 @@ import styles from './BulkBar.module.css';
 export interface BulkBarProps {
   selection: Selection;
   total: number;
-  allIds: () => string[];
+  selectingAll: boolean;
+  onSelectAllMatching: () => void;
   onSelectionChange: (selection: Selection) => void;
   onChangeStage: (stage: StageId) => void;
 }
@@ -18,20 +19,16 @@ export interface BulkBarProps {
 export const BulkBar = ({
   selection,
   total,
-  allIds,
+  selectingAll,
+  onSelectAllMatching,
   onSelectionChange,
   onChangeStage,
 }: BulkBarProps) => (
   <div className={styles.bulkBar} role="toolbar" aria-label="Bulk actions">
     <strong role="status">{selection.size.toLocaleString('en-IN')} selected</strong>
     {selection.size < total && (
-      <Button
-        size="sm"
-        onClick={() => {
-          onSelectionChange(addSelected(selection, allIds()));
-        }}
-      >
-        Select all {total.toLocaleString('en-IN')} matching
+      <Button size="sm" disabled={selectingAll} onClick={onSelectAllMatching}>
+        {selectingAll ? 'Selecting…' : `Select all ${total.toLocaleString('en-IN')} matching`}
       </Button>
     )}
     <span className={styles.spacer} />

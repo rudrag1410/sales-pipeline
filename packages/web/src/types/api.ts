@@ -1,6 +1,6 @@
-import type { ItemErrorKind } from '@/constants/enums';
+import type { ItemErrorKind, StageId } from '@/constants/enums';
 
-import type { Deal, DealId, DealPatch } from './deal';
+import type { Deal, DealId, DealPatch, DealQuery } from './deal';
 
 export interface SimulationConfig {
   latencyMinMs: number;
@@ -31,4 +31,23 @@ export interface SaveSummary {
   conflicts: number;
   rejected: number;
   refused: number;
+}
+
+export interface ListRequest {
+  query: DealQuery;
+  offset: number;
+  limit: number;
+}
+
+export interface ListResponse {
+  items: Deal[];
+  total: number;
+  offset: number;
+}
+
+export interface DealsSummary {
+  total: number;
+  totalValueInr: number;
+  idleCount: number;
+  byStage: Record<StageId, number>;
 }

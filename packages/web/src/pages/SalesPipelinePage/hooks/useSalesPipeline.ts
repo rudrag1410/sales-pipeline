@@ -1,13 +1,13 @@
 import { useToasts } from '@pipeline/shared';
+import { useQueryClient } from '@tanstack/react-query';
 
 import type { StageId } from '@/constants/enums';
 import { SaveStatus } from '@/constants/enums';
 import { STAGE_LABELS } from '@/constants/pipeline';
 import { saveConfig } from '@/data/services';
-import { useDealResults } from '@/pages/SalesPipelinePage/hooks/useDealResults';
+import { SUMMARY_KEY, useDealPages } from '@/pages/SalesPipelinePage/hooks/useDealPages';
 import {
   useDealSaver,
-  useDealsLoader,
   useDealsStore,
   useFakeApi,
   useOwners,
@@ -26,8 +26,11 @@ export const useSalesPipeline = (query: DealQuery): SalesPipeline => {
   const api = useFakeApi();
   const toasts = useToasts();
   const saveAction = useSaveAction();
-  const load = useDealsLoader();
-  const results = useDealResults(query);
+  const queryClient = useQueryClient();
+  const pages = useDealPages(query);
+  const refreshSummary = () => {
+    void queryClient.invalidateQueries({ queryKey: [SUMMARY_KEY] });
+  };
   const { owners, nameOf } = useOwners();
   const saveStates = useSaveStates();
   const remoteMarks = useRemoteMarks();
@@ -47,13 +50,13 @@ export const useSalesPipeline = (query: DealQuery): SalesPipeline => {
 
   return {
     status: {
-      isLoading: load.isPending,
-      error: load.isError ? load.error.message : null,
-      reload: () => {
-        void load.refetch();
-      },
+      isLoading: pages.isLoading,
+      error: pages.error,
+      rowsError: pages.rowsError,
+      reload: pages.reload,
     },
-    results,
+    results: pages.results,
+    requestRange: pages.requestRange,
     owners,
     ownerName: nameOf,
     saveStates,
@@ -73,7 +76,7 @@ export const useSalesPipeline = (query: DealQuery): SalesPipeline => {
           });
           return;
         }
-        void saver.retryAllFailed();
+        void saver.retryAllFailed().then(refreshSummary);
       },
     },
     now: store.now,
@@ -85,19 +88,24 @@ export const useSalesPipeline = (query: DealQuery): SalesPipeline => {
         void saveAction(
           dealIds.map((dealId) => ({ dealId, patch: { stage } })),
           `Moved to ${STAGE_LABELS[stage]}`,
-        );
+        ).then(refreshSummary);
       },
       editDeal: (dealId, patch, label) => {
-        void saveAction([{ dealId, patch }], label);
+        void saveAction([{ dealId, patch }], label).then(refreshSummary);
       },
       retry: (dealId) => {
-        void saver.retry(dealId);
+        void saver.retry(dealId).then(refreshSummary);
       },
       applyMine: (dealId) => {
-        void saver.applyMine(dealId);
+        void saver.applyMine(dealId).then(refreshSummary);
       },
       discard: store.discard,
       clearRemoteMarks: store.clearRemoteMarks,
+      selectAllMatching: async () => {
+        const matching = await api.listMatching(query);
+        store.merge(matching);
+        return matching.map((deal) => deal.id);
+      },
     },
     simulation: {
       config: simulation,

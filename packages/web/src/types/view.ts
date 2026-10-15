@@ -1,6 +1,7 @@
 import type { SkipReason, StageId } from '@/constants/enums';
 
-import type { Deal, DealQuery, QueryEvaluation, SortField } from './deal';
+import type { DealsSummary } from './api';
+import type { Deal, DealQuery, SortField } from './deal';
 import type { SaveState } from './store';
 
 export type ColumnId =
@@ -48,13 +49,9 @@ export interface BulkPlan {
 }
 
 export interface DealResults {
-  deals: ReadonlyArray<Deal>;
-  matches: ReadonlyArray<number>;
   total: number;
-  matchingNow: number;
-  totalValueInr: number;
-  staleCount: number;
-  byStage: QueryEvaluation['byStage'];
+  dealAt: (index: number) => Deal | undefined;
+  summary: DealsSummary | undefined;
 }
 
 export interface RowData {

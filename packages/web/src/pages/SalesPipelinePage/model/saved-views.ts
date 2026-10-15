@@ -14,7 +14,7 @@ import { COLUMNS, DEFAULT_HIDDEN_COLUMNS } from './columns';
 
 const { search: _search, ...baseQuery } = createDefaultQuery();
 
-export const STALE_VIEW: SavedView = {
+const STALE_VIEW: SavedView = {
   id: 'stale',
   name: 'Stale Deals',
   query: {
@@ -60,12 +60,6 @@ export const BUILTIN_VIEWS: ReadonlyArray<SavedView> = [
       sort: { field: 'expectedCloseDate', direction: SortDirection.Asc },
     },
     hiddenColumns: DEFAULT_HIDDEN_COLUMNS,
-  },
-  {
-    id: 'recent',
-    name: 'Recently Updated',
-    query: { ...baseQuery, sort: { field: 'updatedAt', direction: SortDirection.Desc } },
-    hiddenColumns: [...DEFAULT_HIDDEN_COLUMNS.filter((c) => c !== 'version')],
   },
 ];
 

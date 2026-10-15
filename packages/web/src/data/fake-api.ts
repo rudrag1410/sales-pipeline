@@ -1,10 +1,19 @@
 import { ApiErrorKind, InjectedFailure, ItemErrorKind } from '@/constants/enums';
 import { StageId } from '@/constants/enums';
 import { STAGE_IDS } from '@/constants/pipeline';
-import type { ItemResult, RemoteChange, SimulationConfig, UpdateItem } from '@/types/api';
-import type { Deal, DealId, DealPatch, Owner } from '@/types/deal';
+import type {
+  DealsSummary,
+  ItemResult,
+  ListRequest,
+  ListResponse,
+  RemoteChange,
+  SimulationConfig,
+  UpdateItem,
+} from '@/types/api';
+import type { Deal, DealId, DealPatch, DealQuery, Owner } from '@/types/deal';
 import { createRandom, pick, randomInt } from '@/utils/prng';
 
+import { evaluateQuery, queryCacheKey, searchHaystack, sortMatches } from './deal-query';
 import { patchIsNoop, validatePatch } from './deal-rules';
 
 export const DEFAULT_SIMULATION: SimulationConfig = {
@@ -31,10 +40,17 @@ const MS_PER_SECOND = 1000;
 const OFFLINE_ERROR_DELAY_MS = 150;
 const FAILURE_SPLIT = { requestLost: 0.6, responseLost: 0.85 } as const;
 const CHANGE_LOG_LIMIT = 5000;
+const ORDER_CACHE_MS = 60_000;
+const ORDER_CACHE_SIZE = 8;
+const SERVED_MEMORY = 400;
+const SERVED_BIAS = 0.9;
 
 export class FakeApi {
   private deals: Deal[] = [];
   private loaded = false;
+  private haystacks: string[] = [];
+  private servedIds: DealId[] = [];
+  private readonly orders = new Map<string, { at: number; matches: number[] }>();
   private readonly indexById = new Map<DealId, number>();
   private config: SimulationConfig;
   private readonly random = createRandom(42);
@@ -98,16 +114,33 @@ export class FakeApi {
 
   getRevision = (): number => this.revision;
 
-  list = async (): Promise<Deal[]> => {
-    if (!this.config.online) {
-      await this.wait(OFFLINE_ERROR_DELAY_MS);
-      throw new ApiError(ApiErrorKind.Offline, 'You are offline');
-    }
-    await this.wait(this.latency());
-    if (this.nextFailure())
-      throw new ApiError(ApiErrorKind.Server, 'The server had a problem (503)');
+  list = async ({ query, offset, limit }: ListRequest): Promise<ListResponse> => {
+    await this.reach();
+    this.maybeFail();
+    if (offset === 0) this.orders.delete(queryCacheKey(query));
+    const matches = this.orderOf(query);
+    const items = matches.slice(offset, offset + limit).flatMap((index) => this.deals[index] ?? []);
+    this.servedIds = [...this.servedIds, ...items.map((deal) => deal.id)].slice(-SERVED_MEMORY);
+    return { items, total: matches.length, offset };
+  };
+
+  listMatching = async (query: DealQuery): Promise<Deal[]> => {
+    await this.reach();
+    this.maybeFail();
+    this.orders.delete(queryCacheKey(query));
+    return this.orderOf(query).flatMap((index) => this.deals[index] ?? []);
+  };
+
+  summary = async (query: DealQuery): Promise<DealsSummary> => {
+    await this.reach();
     this.ensureLoaded();
-    return [...this.deals];
+    const evaluation = evaluateQuery(this.deals, query, this.now(), this.haystacks);
+    return {
+      total: evaluation.matches.length,
+      totalValueInr: evaluation.totalValueInr,
+      idleCount: evaluation.staleCount,
+      byStage: evaluation.byStage,
+    };
   };
 
   update = async (items: ReadonlyArray<UpdateItem>): Promise<ItemResult[]> => {
@@ -129,9 +162,7 @@ export class FakeApi {
 
   editAsTeammate = (dealId?: DealId): Deal | null => {
     this.ensureLoaded();
-    const target = dealId
-      ? this.find(dealId)
-      : this.deals[randomInt(this.random, 0, this.deals.length - 1)];
+    const target = dealId ? this.find(dealId) : this.pickTeammateTarget();
     if (!target) return null;
     const patch = this.randomPatch(target);
     if (!patch) return null;
@@ -194,11 +225,48 @@ export class FakeApi {
     if (this.log.length > CHANGE_LOG_LIMIT) this.log = this.log.slice(-CHANGE_LOG_LIMIT);
   };
 
+  private pickTeammateTarget = (): Deal | undefined => {
+    if (this.servedIds.length > 0 && this.random() < SERVED_BIAS) {
+      const id = pick(this.random, this.servedIds);
+      return this.find(id);
+    }
+    return this.deals[randomInt(this.random, 0, this.deals.length - 1)];
+  };
+
   private ensureLoaded = () => {
     if (this.loaded) return;
     this.loaded = true;
     this.deals = [...this.createDeals()];
     this.deals.forEach((deal, index) => this.indexById.set(deal.id, index));
+    this.haystacks = this.deals.map(searchHaystack);
+  };
+
+  private orderOf = (query: DealQuery): number[] => {
+    this.ensureLoaded();
+    const key = queryCacheKey(query);
+    const cached = this.orders.get(key);
+    if (cached && performance.now() - cached.at < ORDER_CACHE_MS) return cached.matches;
+    const evaluation = evaluateQuery(this.deals, query, this.now(), this.haystacks);
+    const matches = sortMatches(this.deals, evaluation.matches, query.sort);
+    this.orders.set(key, { at: performance.now(), matches });
+    if (this.orders.size > ORDER_CACHE_SIZE) {
+      const oldest = this.orders.keys().next().value;
+      if (oldest !== undefined) this.orders.delete(oldest);
+    }
+    return matches;
+  };
+
+  private reach = async () => {
+    if (!this.config.online) {
+      await this.wait(OFFLINE_ERROR_DELAY_MS);
+      throw new ApiError(ApiErrorKind.Offline, 'You are offline');
+    }
+    await this.wait(this.latency());
+  };
+
+  private maybeFail = () => {
+    if (this.nextFailure())
+      throw new ApiError(ApiErrorKind.Server, 'The server had a problem (503)');
   };
 
   private find = (id: DealId): Deal | undefined => {

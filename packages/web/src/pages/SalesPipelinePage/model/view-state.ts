@@ -73,7 +73,7 @@ export const hasActiveFilters = (query: DealQuery): boolean =>
   );
 
 const isDefaultLayout = (query: DealQuery, hidden: ReadonlyArray<ColumnId>): boolean =>
-  !hasActiveFilters(query) &&
+  !hasActiveFilters({ ...query, search: '' }) &&
   query.sort.field === DEFAULT_SORT.field &&
   query.sort.direction === DEFAULT_SORT.direction &&
   [...hidden].sort().join() === [...DEFAULT_HIDDEN_COLUMNS].sort().join();

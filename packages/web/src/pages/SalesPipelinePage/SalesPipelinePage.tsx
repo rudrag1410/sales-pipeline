@@ -1,8 +1,14 @@
-import { useLatestCallback, useToasts } from '@pipeline/shared';
+import { Button, useLatestCallback, useToasts } from '@pipeline/shared';
 import { useRef, useState } from 'react';
 
 import { SortDirection, type StageId } from '@/constants/enums';
-import { CURRENT_OWNER_ID, GRID_DOM_ID } from '@/constants/pipeline';
+import {
+  CURRENT_OWNER_ID,
+  EMPTY_STAGE_COUNTS,
+  GRID_DOM_ID,
+  OPEN_STAGES,
+  STALE_DEFAULT_DAYS,
+} from '@/constants/pipeline';
 import { DEFAULT_SORT, queryCacheKey } from '@/data/deal-query';
 import { BulkBar } from '@/pages/SalesPipelinePage/components/BulkBar/BulkBar';
 import { BulkStageDialog } from '@/pages/SalesPipelinePage/components/BulkStageDialog/BulkStageDialog';
@@ -22,8 +28,8 @@ import { useSalesPipeline } from '@/pages/SalesPipelinePage/hooks/useSalesPipeli
 import { useViewActions } from '@/pages/SalesPipelinePage/hooks/useViewActions';
 import { useViewState } from '@/pages/SalesPipelinePage/hooks/useViewState';
 import { COLUMNS } from '@/pages/SalesPipelinePage/model/columns';
-import { BUILTIN_VIEWS, STALE_VIEW } from '@/pages/SalesPipelinePage/model/saved-views';
-import { EMPTY_SELECTION } from '@/pages/SalesPipelinePage/model/selection';
+import { BUILTIN_VIEWS } from '@/pages/SalesPipelinePage/model/saved-views';
+import { addSelected, EMPTY_SELECTION } from '@/pages/SalesPipelinePage/model/selection';
 import type { SortField } from '@/types/deal';
 import type { Selection } from '@/types/view';
 
@@ -46,6 +52,7 @@ const SalesPipelinePage = () => {
   const [bulkStage, setBulkStage] = useState<StageId | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showSimulation, setShowSimulation] = useState(false);
+  const [selectingAll, setSelectingAll] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
 
   const filterKey = queryCacheKey({ ...query, sort: DEFAULT_SORT });
@@ -72,6 +79,22 @@ const SalesPipelinePage = () => {
     toasts.announce(
       next.size === 0 ? 'Selection cleared' : `${next.size.toLocaleString('en-IN')} selected`,
     );
+  };
+
+  const selectAllMatching = async () => {
+    setSelectingAll(true);
+    try {
+      const ids = await pipeline.actions.selectAllMatching();
+      changeSelection(addSelected(selection, ids));
+    } catch (error) {
+      toasts.push({
+        tone: 'danger',
+        title: 'Could not select all deals',
+        description: error instanceof Error ? error.message : 'Try again.',
+      });
+    } finally {
+      setSelectingAll(false);
+    }
   };
 
   const changeSort = (field: SortField) => {
@@ -107,7 +130,10 @@ const SalesPipelinePage = () => {
           <BulkBar
             selection={selection}
             total={results.total}
-            allIds={() => results.matches.flatMap((index) => results.deals[index]?.id ?? [])}
+            selectingAll={selectingAll}
+            onSelectAllMatching={() => {
+              void selectAllMatching();
+            }}
             onSelectionChange={changeSelection}
             onChangeStage={setBulkStage}
           />
@@ -121,7 +147,7 @@ const SalesPipelinePage = () => {
             <PipelineStats
               results={results}
               onShowIdle={() => {
-                actions.applyView(STALE_VIEW);
+                actions.setQuery({ staleDays: STALE_DEFAULT_DAYS, stages: OPEN_STAGES });
               }}
             />
           </>
@@ -133,13 +159,21 @@ const SalesPipelinePage = () => {
         onQueryChange={actions.setQuery}
         onHiddenColumnsChange={actions.setHiddenColumns}
         owners={pipeline.owners}
-        stageCounts={results.byStage}
+        stageCounts={results.summary?.byStage ?? EMPTY_STAGE_COUNTS}
         onClear={actions.clearFilters}
       />
+      {pipeline.status.rowsError && (
+        <div className={styles.banner} role="alert">
+          Some deals could not be loaded: {pipeline.status.rowsError}
+          <Button size="sm" onClick={pipeline.status.reload}>
+            Retry
+          </Button>
+        </div>
+      )}
       {pipeline.status.error ? (
         <GridLoadError message={pipeline.status.error} onRetry={pipeline.status.reload} />
       ) : pipeline.status.isLoading ? (
-        <GridSkeleton />
+        <GridSkeleton hiddenColumns={view.hiddenColumns} />
       ) : (
         <DealsTable
           query={query}
@@ -156,6 +190,11 @@ const SalesPipelinePage = () => {
           onMoveDeal={setMoveId}
           onMoveStage={pipeline.actions.moveStage}
           onClearFilters={actions.resetAll}
+          onRangeChange={pipeline.requestRange}
+          onSelectAllMatching={() => {
+            void selectAllMatching();
+          }}
+          selectingAll={selectingAll}
         />
       )}
       <DealDrawer

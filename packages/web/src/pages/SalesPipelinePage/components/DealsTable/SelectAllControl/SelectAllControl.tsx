@@ -14,7 +14,8 @@ export interface SelectAllControlProps {
   total: number;
   selection: Selection;
   visibleIds: ReadonlyArray<string>;
-  allIds: () => string[];
+  selectingAll: boolean;
+  onSelectAllMatching: () => void;
   onSelectionChange: (selection: Selection) => void;
 }
 
@@ -22,7 +23,8 @@ export const SelectAllControl = ({
   total,
   selection,
   visibleIds,
-  allIds,
+  selectingAll,
+  onSelectAllMatching,
   onSelectionChange,
 }: SelectAllControlProps) => {
   const allVisibleSelected = visibleIds.length > 0 && visibleIds.every((id) => selection.has(id));
@@ -53,10 +55,8 @@ export const SelectAllControl = ({
           {
             id: 'all',
             label: `All ${total.toLocaleString('en-IN')} matching deals`,
-            disabled: total === 0,
-            onSelect: () => {
-              onSelectionChange(addSelected(selection, allIds()));
-            },
+            disabled: total === 0 || selectingAll,
+            onSelect: onSelectAllMatching,
           },
           {
             id: 'clear',

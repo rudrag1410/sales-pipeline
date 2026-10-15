@@ -2,14 +2,13 @@
 
 A table for managing 50,000 sales deals. There's no backend. The deals are made up with Faker (from a fixed seed), and a small fake API inside the app plays the server: it answers after a delay, fails some saves, and can pretend to be teammates editing the same deals. You can change all of that from the sliders icon in the header.
 
-Docs: [short write-up](docs/WRITEUP.md) and [demo script](docs/DEMO.md).
-
 ## Run it
 
 ```bash
 pnpm install
 pnpm dev          # http://localhost:5173
 ```
+
 
 | Command             | What it does                               |
 | ------------------- | ------------------------------------------ |
@@ -21,9 +20,12 @@ pnpm dev          # http://localhost:5173
 | `pnpm test`         | Vitest: data, model and UI tests           |
 | `pnpm verify`       | Format check, lint, typecheck, test, build |
 
+
+
+
 ## What you can do
 
-**Find deals.** Search by company, deal or ID. Filter by stage, owner, value, close date and activity. Each filter is a small chip on one line: click it to set it, and it shows its value with a ✕ to clear it. There are quick views too (All, Needs attention, My Deals, Stale, Closing Soon, Recently Updated). Rows with an overdue close date or no activity for 30 days are flagged. Filters, sort and hidden columns are kept in the URL, so you can share a view.
+**Find deals.** Search by company, deal or ID (the server does the search). Filter by stage, owner, value, close date and activity. Each filter is a small chip on one line: click it to set it, and it shows its value with a ✕ to clear it. There are quick views too (All, Needs attention, My Deals, Stale, Closing Soon). Rows with an overdue close date or no activity for 30 days are flagged. Filters, sort and hidden columns are kept in the URL, so you can share a view.
 
 **Change one deal.** Click the stage badge in a row and pick a stage; you'll get an Undo. Or open the deal to change its stage, owner or value, or press `M` on a row. The new value shows straight away, marked "Saving…".
 
@@ -33,6 +35,7 @@ pnpm dev          # http://localhost:5173
 
 ### When saving goes wrong
 
+
 | What happens                              | What you see                                                      | What you can do                             |
 | ----------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------- |
 | The request fails (network, 503, offline) | Your edit stays on the row as **Not saved**, with the reason      | **Retry** or **Discard change**             |
@@ -40,9 +43,11 @@ pnpm dev          # http://localhost:5173
 | Someone else saved the deal first         | The row says **Conflict**; the drawer shows your value and theirs | **Apply mine on latest** or **Keep theirs** |
 | The server refuses the change             | The deal goes back to its saved value and says why                | **Dismiss**                                 |
 
+
 Stage rules: an open deal can move anywhere. A Won deal can only reopen to Negotiation, and a Lost deal only to New Lead or Contacted. The value of a closed deal is locked. A deal that's still saving can't be edited again until it's done.
 
 ### Simulation settings (sliders icon)
+
 
 | Setting                                    | What it does                                                                                     |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------ |
@@ -53,9 +58,11 @@ Stage rules: an open deal can move anywhere. A Won deal can only reopen to Negot
 | Fail next save                             | Forces one failure, of either kind, on the next save                                             |
 | A teammate edits the deal you just changed | Changes the deal you just edited (or the open one) right now, so you can trigger a conflict      |
 
+
 Teammates' edits show up in place with a small marker. Rows never move on their own: the order only changes when you change the filters.
 
 ## Keyboard
+
 
 | Keys                     | What it does                                           |
 | ------------------------ | ------------------------------------------------------ |
@@ -68,6 +75,7 @@ Teammates' edits show up in place with a small marker. Rows never move on their 
 | `Enter`                  | Open the active deal                                   |
 | `M`                      | Move the active deal to another stage                  |
 | `Esc`                    | Close the open menu, dialog or drawer; clear selection |
+
 
 In search, `↓` or `Enter` goes into the table, and `Esc` clears the text, then leaves the box. The first Tab stop is a "Skip to deals table" link. The table keeps focus on itself and points at the active row with `aria-activedescendant`.
 
@@ -90,5 +98,6 @@ packages/web/src
 - `DealsStore` (zustand) is the app's copy of the deals. An edit shows immediately, and the deal keeps a save state (saving, failed, conflict, rejected) until the server confirms or you drop it.
 - **TanStack Query** loads the deals (with a skeleton and a retry) and runs each save request as a mutation.
 - `DealSaver` sends edits in chunks and records each result in the store. It never retries by itself: a failed save stays visible until you press Retry.
-- **Filtering and sorting are in memory**, about 5 ms to filter and 20–35 ms to sort 50,000 deals (timed in Node). Row order is worked out when the query changes, so rows don't jump.
-- **The table is virtual** (TanStack Virtual), so about 25 rows are in the DOM.
+- **The app loads deals the way it would from a real server.** The fake API holds all 50,000 deals and does the searching, filtering, sorting and counting. The table asks for 100 deals at a time as you scroll (and for the right page if you jump to the end), and the header numbers come from a separate summary request. Pages are cached per filter, so row order stays fixed and rows don't jump. When you save changes and then open a filter again, it fetches fresh rows, so an edited deal shows up in the right place. Rows that haven't arrived yet show as placeholders. "Select all N matching" asks the server for the matching deals.
+- **The table is virtual** (TanStack Virtual), so about 25 rows are in the DOM, whatever the total.
+
