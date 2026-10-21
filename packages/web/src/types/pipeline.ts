@@ -8,8 +8,17 @@ import type { DealResults } from './view';
 export interface LoadStatus {
   isLoading: boolean;
   error: string | null;
-  rowsError: string | null;
   reload: () => void;
+}
+
+export interface PagingInfo {
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  total: number;
+  from: number;
+  to: number;
+  loading: boolean;
 }
 
 export interface SyncSummary {
@@ -41,7 +50,7 @@ export interface SimulationControls {
 export interface SalesPipeline {
   status: LoadStatus;
   results: DealResults;
-  requestRange: (start: number, end: number) => void;
+  paging: PagingInfo;
   owners: ReadonlyArray<Owner>;
   ownerName: (ownerId: string) => string;
   saveStates: ReadonlyMap<DealId, SaveState>;

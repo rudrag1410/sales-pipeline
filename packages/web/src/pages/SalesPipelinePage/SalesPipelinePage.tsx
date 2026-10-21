@@ -1,4 +1,4 @@
-import { Button, useLatestCallback, useToasts } from '@pipeline/shared';
+import { useLatestCallback, useToasts } from '@pipeline/shared';
 import { useRef, useState } from 'react';
 
 import { SortDirection, type StageId } from '@/constants/enums';
@@ -19,6 +19,10 @@ import { GridSkeleton } from '@/pages/SalesPipelinePage/components/DealsTable/Gr
 import { FilterToolbar } from '@/pages/SalesPipelinePage/components/FilterToolbar/FilterToolbar';
 import { Header } from '@/pages/SalesPipelinePage/components/Header/Header';
 import { MoveDealDialog } from '@/pages/SalesPipelinePage/components/MoveDealDialog/MoveDealDialog';
+import {
+  Pagination,
+  PaginationSkeleton,
+} from '@/pages/SalesPipelinePage/components/Pagination/Pagination';
 import { PipelineStats } from '@/pages/SalesPipelinePage/components/PipelineStats/PipelineStats';
 import { SavedViewsBar } from '@/pages/SalesPipelinePage/components/SavedViewsBar/SavedViewsBar';
 import { ShortcutsDialog } from '@/pages/SalesPipelinePage/components/ShortcutsDialog/ShortcutsDialog';
@@ -39,8 +43,8 @@ const SalesPipelinePage = () => {
   const toasts = useToasts();
   const [view, changeView] = useViewState();
   const { query } = view;
-  const pipeline = useSalesPipeline(query);
-  const { results } = pipeline;
+  const pipeline = useSalesPipeline(query, view.page, view.pageSize);
+  const { results, paging } = pipeline;
   const updateView: typeof changeView = (update) => {
     pipeline.actions.clearRemoteMarks();
     changeView(update);
@@ -63,6 +67,12 @@ const SalesPipelinePage = () => {
   }
 
   useGlobalShortcuts({
+    onPreviousPage: useLatestCallback(() => {
+      if (paging.page > 1) actions.setPage(paging.page - 1);
+    }),
+    onNextPage: useLatestCallback(() => {
+      if (paging.page < paging.pageCount) actions.setPage(paging.page + 1);
+    }),
     onFocusSearch: useLatestCallback(() => {
       searchRef.current?.focus();
     }),
@@ -162,14 +172,6 @@ const SalesPipelinePage = () => {
         stageCounts={results.summary?.byStage ?? EMPTY_STAGE_COUNTS}
         onClear={actions.clearFilters}
       />
-      {pipeline.status.rowsError && (
-        <div className={styles.banner} role="alert">
-          Some deals could not be loaded: {pipeline.status.rowsError}
-          <Button size="sm" onClick={pipeline.status.reload}>
-            Retry
-          </Button>
-        </div>
-      )}
       {pipeline.status.error ? (
         <GridLoadError message={pipeline.status.error} onRetry={pipeline.status.reload} />
       ) : pipeline.status.isLoading ? (
@@ -190,11 +192,21 @@ const SalesPipelinePage = () => {
           onMoveDeal={setMoveId}
           onMoveStage={pipeline.actions.moveStage}
           onClearFilters={actions.resetAll}
-          onRangeChange={pipeline.requestRange}
           onSelectAllMatching={() => {
             void selectAllMatching();
           }}
           selectingAll={selectingAll}
+          page={paging.page}
+          pageSize={paging.pageSize}
+          loading={paging.loading}
+        />
+      )}
+      {pipeline.status.isLoading && !pipeline.status.error && <PaginationSkeleton />}
+      {!pipeline.status.error && !pipeline.status.isLoading && (
+        <Pagination
+          paging={paging}
+          onPageChange={actions.setPage}
+          onPageSizeChange={actions.setPageSize}
         />
       )}
       <DealDrawer

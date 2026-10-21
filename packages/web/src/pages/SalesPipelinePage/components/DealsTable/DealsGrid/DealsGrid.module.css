@@ -24,3 +24,7 @@
   width: var(--total-width);
   min-width: 100%;
 }
+.scroller[data-loading='true'] .body {
+  opacity: 0.55;
+  transition: opacity var(--duration-fast, 120ms);
+}

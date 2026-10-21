@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { App } from '@/App';
@@ -38,25 +38,59 @@ const renderApp = async (dealCount: number) => {
 const grid = () => screen.getByRole('grid', { name: 'Deals' });
 
 describe('SalesPipelinePage', () => {
-  it('renders 50,000 deals with a bounded number of DOM rows', async () => {
+  it('renders one page of 50,000 deals with a bounded number of DOM rows', async () => {
     await renderApp(DATASET_SIZE);
     expect(within(grid()).getAllByRole('row').length).toBeLessThan(60);
-    expect(grid()).toHaveAttribute('aria-rowcount', String(DATASET_SIZE + 1));
-    expect(screen.getAllByText('50,000').length).toBeGreaterThan(0);
+    expect(grid()).toHaveAttribute('aria-rowcount', '51');
+    expect(screen.getByText('1–50 of 50,000 deals')).toBeInTheDocument();
+    expect(screen.getByLabelText('Page number')).toHaveValue('1');
+    expect(screen.getByText(/^of 1,000$/)).toBeInTheDocument();
   });
 
-  it('loads one page first and fetches later pages only when you scroll to them', async () => {
+  it('fetches only the page you ask for, and keeps it in the URL', async () => {
+    const user = userEvent.setup();
     const { api } = await renderApp(450);
-    const requested = (): number[] => spy.mock.calls.map(([request]) => request.offset);
     const spy = vi.spyOn(api, 'list');
-    expect(requested()).toEqual([]);
-    grid().scrollTop = 450 * 36 - VIEWPORT_HEIGHT;
-    fireEvent.scroll(grid());
+    await user.click(screen.getByRole('button', { name: 'Next page' }));
+    await screen.findByText('51–100 of 450 deals');
+    expect(spy.mock.calls.map(([request]) => request.offset)).toEqual([50]);
+    expect(window.location.search).toContain('page=2');
+    await user.click(screen.getByRole('button', { name: 'Last page' }));
+    await screen.findByText('401–450 of 450 deals');
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
+  });
+
+  it('changes the page size and goes back to page one', async () => {
+    const user = userEvent.setup();
+    await renderApp(450);
+    await user.click(screen.getByRole('button', { name: 'Next page' }));
+    await screen.findByText('51–100 of 450 deals');
+    await user.click(screen.getByRole('button', { name: '50 per page' }));
+    await user.click(await screen.findByRole('menuitemcheckbox', { name: '100 per page' }));
+    await screen.findByText('1–100 of 450 deals');
+    expect(screen.getByLabelText('Page number')).toHaveValue('1');
+  });
+
+  it('jumps to a typed page, and goes to page one when a filter changes', async () => {
+    const user = userEvent.setup();
+    await renderApp(450);
+    const input = screen.getByLabelText('Page number');
+    await user.clear(input);
+    await user.type(input, '4{Enter}');
+    await screen.findByText('151–200 of 450 deals');
+    await user.click(screen.getByRole('button', { name: 'Needs attention' }));
     await waitFor(() => {
-      expect(requested()).toContain(400);
+      expect(screen.getByLabelText('Page number')).toHaveValue('1');
     });
-    expect(requested()).not.toContain(200);
-    expect(requested()).not.toContain(500);
+  });
+
+  it('moves between pages with the [ and ] keys', async () => {
+    const user = userEvent.setup();
+    await renderApp(450);
+    await user.keyboard(']');
+    await screen.findByText('51–100 of 450 deals');
+    await user.keyboard('[[');
+    await screen.findByText('1–50 of 450 deals');
   });
 
   it('supports keyboard navigation, selection, opening the drawer and restoring focus', async () => {

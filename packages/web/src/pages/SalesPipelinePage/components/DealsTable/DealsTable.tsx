@@ -24,9 +24,11 @@ export interface DealsTableProps {
   onMoveDeal: (id: string) => void;
   onMoveStage: (id: string, stage: StageId) => void;
   onClearFilters: () => void;
-  onRangeChange: (start: number, end: number) => void;
   onSelectAllMatching: () => void;
   selectingAll: boolean;
+  page: number;
+  pageSize: number;
+  loading: boolean;
 }
 
 export const DealsTable = (props: DealsTableProps) => {

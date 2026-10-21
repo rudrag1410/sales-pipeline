@@ -66,6 +66,8 @@ export const CURRENT_OWNER_ID = 'owner-01';
 export const FILTER_DEBOUNCE_MS = 300;
 export const GRID_DOM_ID = 'deals-grid';
 export const DEFAULT_VIEW_ID = 'all';
+export const PAGE_SIZES: ReadonlyArray<number> = [25, 50, 100];
+export const DEFAULT_PAGE_SIZE = 50;
 
 export const EMPTY_STAGE_COUNTS: Readonly<Record<StageId, number>> = {
   [StageId.NewLead]: 0,

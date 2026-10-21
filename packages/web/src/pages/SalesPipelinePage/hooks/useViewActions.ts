@@ -42,9 +42,16 @@ export const useViewActions = (updateView: UpdateView) => ({
       const defaults = createDefaultViewState();
       return {
         ...defaults,
+        pageSize: s.pageSize,
         query: { ...defaults.query, search: s.query.search, sort: s.query.sort },
       };
     });
+  },
+  setPage: (page: number) => {
+    updateView((s) => (s.page === page ? s : { ...s, page }));
+  },
+  setPageSize: (pageSize: number) => {
+    updateView((s) => ({ ...s, pageSize }));
   },
   resetAll: () => {
     updateView(createDefaultViewState);

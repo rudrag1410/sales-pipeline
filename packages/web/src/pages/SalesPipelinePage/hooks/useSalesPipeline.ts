@@ -20,14 +20,18 @@ import type { SimulationConfig } from '@/types/api';
 import type { DealQuery } from '@/types/deal';
 import type { SalesPipeline } from '@/types/pipeline';
 
-export const useSalesPipeline = (query: DealQuery): SalesPipeline => {
+export const useSalesPipeline = (
+  query: DealQuery,
+  page: number,
+  pageSize: number,
+): SalesPipeline => {
   const store = useDealsStore();
   const saver = useDealSaver();
   const api = useFakeApi();
   const toasts = useToasts();
   const saveAction = useSaveAction();
   const queryClient = useQueryClient();
-  const pages = useDealPages(query);
+  const pages = useDealPages(query, page, pageSize);
   const refreshSummary = () => {
     void queryClient.invalidateQueries({ queryKey: [SUMMARY_KEY] });
   };
@@ -52,11 +56,10 @@ export const useSalesPipeline = (query: DealQuery): SalesPipeline => {
     status: {
       isLoading: pages.isLoading,
       error: pages.error,
-      rowsError: pages.rowsError,
       reload: pages.reload,
     },
     results: pages.results,
-    requestRange: pages.requestRange,
+    paging: pages.paging,
     owners,
     ownerName: nameOf,
     saveStates,

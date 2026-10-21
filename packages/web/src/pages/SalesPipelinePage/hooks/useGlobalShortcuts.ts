@@ -6,12 +6,16 @@ const SEARCH_KEY = '/';
 const COMMAND_PALETTE_KEY = 'k';
 const HELP_KEY = '?';
 const GRID_KEY = 'g';
+const PREVIOUS_PAGE_KEY = '[';
+const NEXT_PAGE_KEY = ']';
 
 const isTypingTarget = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
 export const useGlobalShortcuts = ({
+  onPreviousPage,
+  onNextPage,
   onFocusSearch,
   onFocusGrid,
   onShowShortcuts,
@@ -28,6 +32,8 @@ export const useGlobalShortcuts = ({
         [SEARCH_KEY]: onFocusSearch,
         [GRID_KEY]: onFocusGrid,
         [HELP_KEY]: onShowShortcuts,
+        [PREVIOUS_PAGE_KEY]: onPreviousPage,
+        [NEXT_PAGE_KEY]: onNextPage,
       };
       const action = actions[event.key];
       if (action) {
@@ -39,5 +45,5 @@ export const useGlobalShortcuts = ({
     return () => {
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [onFocusSearch, onFocusGrid, onShowShortcuts]);
+  }, [onFocusSearch, onFocusGrid, onShowShortcuts, onPreviousPage, onNextPage]);
 };

@@ -12,14 +12,13 @@ import { DealRow } from '@/pages/SalesPipelinePage/components/DealsTable/DealRow
 import type { DealsTableProps } from '@/pages/SalesPipelinePage/components/DealsTable/DealsTable';
 import { GridEmpty } from '@/pages/SalesPipelinePage/components/DealsTable/GridEmpty/GridEmpty';
 import { GridHeader } from '@/pages/SalesPipelinePage/components/DealsTable/GridHeader/GridHeader';
-import { RowSkeleton } from '@/pages/SalesPipelinePage/components/DealsTable/RowSkeleton/RowSkeleton';
 import { SelectAllControl } from '@/pages/SalesPipelinePage/components/DealsTable/SelectAllControl/SelectAllControl';
 import { TABLE_COLUMNS } from '@/pages/SalesPipelinePage/components/DealsTable/table-columns';
 import { useRootFontSize } from '@/pages/SalesPipelinePage/hooks/useRootFontSize';
 import { SELECT_COLUMN_ID } from '@/pages/SalesPipelinePage/model/columns';
 import { toggleSelected } from '@/pages/SalesPipelinePage/model/selection';
 import type { SortField } from '@/types/deal';
-import type { ColumnId, RowData } from '@/types/view';
+import type { RowData } from '@/types/view';
 
 import styles from './DealsGrid.module.css';
 import { useGridKeyboard } from './useGridKeyboard';
@@ -50,22 +49,30 @@ export const DealsGrid = ({
   onMoveDeal,
   onMoveStage,
   onClearFilters,
-  onRangeChange,
   onSelectAllMatching,
   selectingAll,
+  page,
+  pageSize,
+  loading,
   columnSizing,
   onColumnSizingChange,
 }: DealsGridProps) => {
-  const { total, dealAt } = results;
+  const { rowCount, dealAt } = results;
+  const pageKey = `${page}:${pageSize}`;
   const rootFontPx = useRootFontSize();
   const scale = rootFontPx / BASE_FONT_PX;
   const rowHeightPx = ROW_HEIGHT_REM * rootFontPx;
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [activePageKey, setActivePageKey] = useState(pageKey);
+  if (activePageKey !== pageKey) {
+    setActivePageKey(pageKey);
+    setActiveIndex(null);
+  }
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
-    count: total,
+    count: rowCount,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeightPx,
     overscan: OVERSCAN_ROWS,
@@ -73,11 +80,9 @@ export const DealsGrid = ({
   });
   const items = virtualizer.getVirtualItems();
 
-  const firstVisible = items[0]?.index ?? 0;
-  const lastVisible = items.at(-1)?.index ?? 0;
   useEffect(() => {
-    onRangeChange(firstVisible, lastVisible);
-  }, [firstVisible, lastVisible, onRangeChange]);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [pageKey]);
 
   const data = items.flatMap((item): RowData[] => {
     const deal = dealAt(item.index);
@@ -119,7 +124,6 @@ export const DealsGrid = ({
   } as CSSProperties;
 
   const rowsByIndex = new Map(table.getRowModel().rows.map((row) => [row.original.index, row]));
-  const columnIds = visibleColumns.map((column) => column.id as ColumnId);
   const visibleIds = data.map((row) => row.deal.id);
   const nowMinute = Math.floor(now() / MINUTE_MS) * MINUTE_MS;
 
@@ -137,7 +141,7 @@ export const DealsGrid = ({
   });
 
   const onKeyDown = useGridKeyboard({
-    total,
+    total: rowCount,
     activeIndex,
     viewportHeight: () => scrollRef.current?.clientHeight,
     rowHeightPx,
@@ -170,14 +174,16 @@ export const DealsGrid = ({
         id={GRID_DOM_ID}
         role="grid"
         aria-label="Deals"
-        aria-rowcount={total + 1}
+        aria-rowcount={rowCount + 1}
+        aria-busy={loading}
+        data-loading={loading}
         aria-colcount={visibleColumns.length}
         aria-multiselectable="true"
         aria-activedescendant={activeIndex === null ? undefined : `deal-row-${activeIndex}`}
         tabIndex={0}
         onKeyDown={onKeyDown}
         onFocus={(event) => {
-          if (event.target === event.currentTarget && activeIndex === null && total > 0)
+          if (event.target === event.currentTarget && activeIndex === null && rowCount > 0)
             setActiveIndex(0);
         }}
       >
@@ -189,7 +195,7 @@ export const DealsGrid = ({
           onResizeBy={resizeBy}
           renderSelectControl={() => (
             <SelectAllControl
-              total={total}
+              total={results.total}
               selection={selection}
               visibleIds={visibleIds}
               selectingAll={selectingAll}
@@ -198,7 +204,7 @@ export const DealsGrid = ({
             />
           )}
         />
-        {total === 0 ? (
+        {rowCount === 0 ? (
           <GridEmpty search={query.search} onClearFilters={onClearFilters} />
         ) : (
           <div
@@ -208,15 +214,7 @@ export const DealsGrid = ({
           >
             {items.map((item) => {
               const row = rowsByIndex.get(item.index);
-              if (!row)
-                return (
-                  <RowSkeleton
-                    key={`skeleton-${item.index}`}
-                    index={item.index}
-                    top={item.start}
-                    columnIds={columnIds}
-                  />
-                );
+              if (!row) return null;
               return (
                 <DealRow
                   key={row.id}

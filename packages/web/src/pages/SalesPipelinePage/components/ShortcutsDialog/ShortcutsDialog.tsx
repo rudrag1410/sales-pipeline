@@ -16,6 +16,7 @@ export const SHORTCUT_GROUPS: ReadonlyArray<ShortcutGroup> = [
       [`${MODIFIER_KEY_LABEL} K`, 'Focus search (works while typing)'],
       ['/', 'Focus search'],
       ['G', 'Jump to the deals table'],
+      ['[ ]', 'Previous or next page'],
       ['?', 'Show this list'],
       ['Esc', 'Close dialog, drawer or menu'],
       ['Tab / Shift Tab', 'Move between controls (a skip link jumps to the table)'],
@@ -33,7 +34,7 @@ export const SHORTCUT_GROUPS: ReadonlyArray<ShortcutGroup> = [
     shortcuts: [
       ['↑ ↓', 'Move the active row'],
       ['PgUp PgDn', 'Move one screen'],
-      ['Home End', 'Jump to the first or last row'],
+      ['Home End', 'Jump to the first or last row on the page'],
       ['Space or X', 'Select or deselect the active row'],
       ['Shift ↑ ↓', 'Extend the selection while moving'],
       ['Enter', 'Open the active deal'],

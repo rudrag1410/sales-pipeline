@@ -31,6 +31,8 @@ export interface ViewState {
   query: DealQuery;
   hiddenColumns: ReadonlyArray<ColumnId>;
   viewId: string | null;
+  page: number;
+  pageSize: number;
 }
 
 export interface SavedView {
@@ -50,6 +52,7 @@ export interface BulkPlan {
 
 export interface DealResults {
   total: number;
+  rowCount: number;
   dealAt: (index: number) => Deal | undefined;
   summary: DealsSummary | undefined;
 }
@@ -86,6 +89,8 @@ export interface GridKeyboardOptions {
 }
 
 export interface GlobalShortcuts {
+  onPreviousPage: () => void;
+  onNextPage: () => void;
   onFocusSearch: () => void;
   onFocusGrid: () => void;
   onShowShortcuts: () => void;

@@ -6,7 +6,7 @@ I built one screen: a table of 50,000 deals. I picked a table because most of wh
 
 You can search, filter, move one deal in a click, or move thousands at once. There's no backend, so a fake API inside the app plays the server. A settings panel (the sliders icon) lets you change the delay, the failure rate, go offline, and turn on teammates editing, while you test.
 
-The app talks to that fake server the way it would talk to a real one. It never holds all 50,000 deals. It asks for a page of 100 rows as you scroll (rows not here yet show as placeholders), and the server does the searching, filtering and sorting. The header numbers and the stage counts come from a separate "summary" request, so they're right even for rows you haven't loaded. Pages are cached, and a page is refetched after you save something so a filtered list doesn't show old data.
+The app talks to that fake server the way it would talk to a real one. It never holds all 50,000 deals. The table has pagination (25, 50 or 100 rows per page): each page is one request for just those rows, so jumping to page 800 costs the same as page 2. The server does the searching, filtering and sorting. The header numbers and the stage counts come from a separate "summary" request, so they're right even for pages you haven't opened. Pages are cached, and a page is refetched after you save something so a filtered list doesn't show old data.
 
 ## UX decisions, and what I didn't do
 
@@ -16,8 +16,6 @@ The app talks to that fake server the way it would talk to a real one. It never 
 - **Filters are small chips on one line.** Click one to set it; it shows its value with a ✕ to clear it. I dropped a big filter sidebar because it pushes the table down.
 - **Moving a deal is one click.** The stage badge in each row opens a menu, and you get an Undo.
 - **Big changes ask first.** The bulk dialog tells you how many deals will move and how many will be skipped, and asks you to confirm if it's Lost or 100 or more deals. "Select all" works on every deal that matches, not just the ones loaded.
-
-
 
 ## When a save fails, or a teammate changes something
 
@@ -34,7 +32,7 @@ Teammates' edits update the row where it is, with a small marker, and the row do
 **Making it hold up at scale**
 
 - **A real backend.** The monorepo is ready for it. I'd move the shared types and the stage rules into their own package, so the server and the UI enforce exactly the same rules, and swap `FakeApi` for an HTTP client.
-- **Cursor paging.** The fake server pages by offset, which can shift when a teammate adds or removes a deal while you scroll. A cursor ("rows after this one") doesn't have that problem and stays fast at any depth.
+- **Cursor paging.** The fake server pages by offset, which can shift when a teammate adds or removes a deal while you move between pages, so a deal can appear twice or be skipped. A cursor ("rows after this one") doesn't have that problem and stays fast at any depth.
 - **Live updates over WebSocket or SSE.** Today the fake server pushes changes. With a real one I'd send small "deal changed" events and only update rows that are loaded, so 20 people editing doesn't mean 20 people refetching.
 - **Bulk changes as a background job.** Moving 5,000 deals from the browser means the tab has to stay open. I'd send one request ("move everything matching this filter to Lost"), let the server do it, and show progress, with a safe retry key so it never runs twice.
 - **Proper idempotency keys and retry with backoff.** Right now I detect "already saved" by comparing values. Real keys are safer, and an automatic retry for short network errors would mean fewer clicks, as long as failures stay visible.
@@ -47,4 +45,3 @@ Teammates' edits update the row where it is, with a small marker, and the row do
 - **Command palette.** `⌘K` already searches. It could also run actions like "move selected to Lost" or "show my stale deals".
 - **Inline editing of the value and owner** in the table, and saved views that you can share with the team.
 - **Presence.** Show who has a deal open, so two people don't edit the same one by accident.
-

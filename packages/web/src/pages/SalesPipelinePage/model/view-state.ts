@@ -7,7 +7,7 @@ import {
 } from 'nuqs';
 
 import { SortDirection, StageId } from '@/constants/enums';
-import { DEFAULT_VIEW_ID } from '@/constants/pipeline';
+import { DEFAULT_PAGE_SIZE, DEFAULT_VIEW_ID, PAGE_SIZES } from '@/constants/pipeline';
 import { createDefaultQuery, DEFAULT_SORT } from '@/data/deal-query';
 import type { DealQuery, SortField, SortSpec } from '@/types/deal';
 import type { ColumnId, ViewState } from '@/types/view';
@@ -47,6 +47,8 @@ export const viewParsers = {
     ...DEFAULT_HIDDEN_COLUMNS,
   ]),
   view: parseAsString,
+  page: parseAsInteger.withDefault(1),
+  size: parseAsInteger.withDefault(DEFAULT_PAGE_SIZE),
 };
 
 export type ViewParams = {
@@ -57,6 +59,8 @@ export const createDefaultViewState = (): ViewState => ({
   query: createDefaultQuery(),
   hiddenColumns: DEFAULT_HIDDEN_COLUMNS,
   viewId: DEFAULT_VIEW_ID,
+  page: 1,
+  pageSize: DEFAULT_PAGE_SIZE,
 });
 
 export const hasActiveFilters = (query: DealQuery): boolean =>
@@ -93,10 +97,20 @@ export const fromParams = (params: ViewParams): ViewState => {
   };
   const hiddenColumns = params.hide ?? DEFAULT_HIDDEN_COLUMNS;
   const viewId = params.view ?? (isDefaultLayout(query, hiddenColumns) ? DEFAULT_VIEW_ID : null);
-  return { query, hiddenColumns, viewId };
+  const pageSize = PAGE_SIZES.includes(params.size ?? 0)
+    ? (params.size ?? DEFAULT_PAGE_SIZE)
+    : DEFAULT_PAGE_SIZE;
+  const page = Math.max(1, params.page ?? 1);
+  return { query, hiddenColumns, viewId, page, pageSize };
 };
 
-export const toParams = ({ query, hiddenColumns, viewId }: ViewState): ViewParams => ({
+export const toParams = ({
+  query,
+  hiddenColumns,
+  viewId,
+  page,
+  pageSize,
+}: ViewState): ViewParams => ({
   q: query.search || null,
   stage: query.stages.length ? [...query.stages] : null,
   owner: query.ownerIds.length ? [...query.ownerIds] : null,
@@ -109,4 +123,6 @@ export const toParams = ({ query, hiddenColumns, viewId }: ViewState): ViewParam
   sort: query.sort,
   hide: [...hiddenColumns],
   view: viewId && viewId !== DEFAULT_VIEW_ID ? viewId : null,
+  page: page > 1 ? page : null,
+  size: pageSize === DEFAULT_PAGE_SIZE ? null : pageSize,
 });
