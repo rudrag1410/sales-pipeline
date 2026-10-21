@@ -1,4 +1,5 @@
 import { DATASET_SIZE, OWNER_COUNT, STAGE_IDS } from '@/constants/pipeline';
+import { OWNERS } from '@/data/owners';
 import { generateDeals, generateOwners } from '@/data/seed-data';
 
 describe('seed data', () => {
@@ -27,5 +28,9 @@ describe('seed data', () => {
     }
     expect(new Set(deals.map((d) => d.ownerId)).size).toBe(OWNER_COUNT);
     expect(elapsed).toBeLessThan(2_000);
+  });
+
+  it('keeps the pre-generated owner list in sync with the generator', () => {
+    expect(OWNERS).toEqual(generateOwners());
   });
 });

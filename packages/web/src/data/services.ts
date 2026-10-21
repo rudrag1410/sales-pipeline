@@ -7,7 +7,6 @@ import type { ServiceOptions, Services } from '@/types/store';
 import { DealSaver } from './deal-saver';
 import { DealsStore } from './deals-store';
 import { DEFAULT_SIMULATION, FakeApi } from './fake-api';
-import { generateDeals } from './seed-data';
 
 const STORAGE_KEY = 'pipeline.simulation.v2';
 
@@ -46,7 +45,11 @@ export const createServices = ({
 }: ServiceOptions = {}): Services => {
   const store = new DealsStore();
   const api = new FakeApi(
-    () => deals ?? generateDeals(DATASET_SIZE, DEFAULT_SEED),
+    async () => {
+      if (deals) return deals;
+      const { generateDeals } = await import('./seed-data');
+      return generateDeals(DATASET_SIZE, DEFAULT_SEED);
+    },
     store.owners,
     { ...DEFAULT_SIMULATION, ...(useSavedConfig ? loadSavedConfig() : {}), ...config },
     store.now,

@@ -48,6 +48,7 @@ const SERVED_BIAS = 0.9;
 export class FakeApi {
   private deals: Deal[] = [];
   private loaded = false;
+  private loading: Promise<void> | null = null;
   private haystacks: string[] = [];
   private servedIds: DealId[] = [];
   private readonly orders = new Map<string, { at: number; matches: number[] }>();
@@ -62,7 +63,7 @@ export class FakeApi {
   private timer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
-    private readonly createDeals: () => ReadonlyArray<Deal>,
+    private readonly createDeals: () => ReadonlyArray<Deal> | Promise<ReadonlyArray<Deal>>,
     private readonly owners: ReadonlyArray<Owner>,
     config: Partial<SimulationConfig> = {},
     private readonly now: () => number = () => Date.now(),
@@ -133,7 +134,6 @@ export class FakeApi {
 
   summary = async (query: DealQuery): Promise<DealsSummary> => {
     await this.reach();
-    this.ensureLoaded();
     const evaluation = evaluateQuery(this.deals, query, this.now(), this.haystacks);
     return {
       total: evaluation.matches.length,
@@ -148,7 +148,7 @@ export class FakeApi {
       await this.wait(OFFLINE_ERROR_DELAY_MS);
       throw new ApiError(ApiErrorKind.Offline, 'You are offline');
     }
-    await this.wait(this.latency());
+    await Promise.all([this.wait(this.latency()), this.ready()]);
     const failure = this.nextFailure();
     if (failure === InjectedFailure.RequestLost)
       throw new ApiError(ApiErrorKind.Network, 'The request did not reach the server');
@@ -161,7 +161,7 @@ export class FakeApi {
   };
 
   editAsTeammate = (dealId?: DealId): Deal | null => {
-    this.ensureLoaded();
+    if (!this.loaded) return null;
     const target = dealId ? this.find(dealId) : this.pickTeammateTarget();
     if (!target) return null;
     const patch = this.randomPatch(target);
@@ -233,16 +233,17 @@ export class FakeApi {
     return this.deals[randomInt(this.random, 0, this.deals.length - 1)];
   };
 
-  private ensureLoaded = () => {
-    if (this.loaded) return;
-    this.loaded = true;
-    this.deals = [...this.createDeals()];
-    this.deals.forEach((deal, index) => this.indexById.set(deal.id, index));
-    this.haystacks = this.deals.map(searchHaystack);
+  ready = (): Promise<void> => {
+    this.loading ??= Promise.resolve(this.createDeals()).then((created) => {
+      this.deals = [...created];
+      this.deals.forEach((deal, index) => this.indexById.set(deal.id, index));
+      this.haystacks = this.deals.map(searchHaystack);
+      this.loaded = true;
+    });
+    return this.loading;
   };
 
   private orderOf = (query: DealQuery): number[] => {
-    this.ensureLoaded();
     const key = queryCacheKey(query);
     const cached = this.orders.get(key);
     if (cached && performance.now() - cached.at < ORDER_CACHE_MS) return cached.matches;
@@ -261,7 +262,7 @@ export class FakeApi {
       await this.wait(OFFLINE_ERROR_DELAY_MS);
       throw new ApiError(ApiErrorKind.Offline, 'You are offline');
     }
-    await this.wait(this.latency());
+    await Promise.all([this.wait(this.latency()), this.ready()]);
   };
 
   private maybeFail = () => {
@@ -270,7 +271,6 @@ export class FakeApi {
   };
 
   private find = (id: DealId): Deal | undefined => {
-    this.ensureLoaded();
     const index = this.indexById.get(id);
     return index === undefined ? undefined : this.deals[index];
   };

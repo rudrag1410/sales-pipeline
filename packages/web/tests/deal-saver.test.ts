@@ -55,6 +55,7 @@ describe('DealSaver', () => {
   it('shows a real conflict, and "apply mine" saves on top of the latest version', async () => {
     const { store, api, saver, find } = setup();
     const deal = find((d) => d.stage === StageId.Contacted);
+    await api.ready();
     api.editAsTeammate(deal.id);
     const theirs = await api.update([{ dealId: deal.id, patch: {}, expectedVersion: 99 }]);
     expect(theirs[0]).toMatchObject({ ok: false, kind: ItemErrorKind.Conflict });
@@ -104,10 +105,11 @@ describe('DealSaver', () => {
     expect(store.getSaveStates().size).toBe(0);
   });
 
-  it('applies a teammate change quietly and catches up after being offline', () => {
+  it('applies a teammate change quietly and catches up after being offline', async () => {
     const { store, api, saver, find } = setup();
     const stop = saver.connect();
     const deal = find((d) => d.stage === StageId.Contacted);
+    await api.ready();
     api.editAsTeammate(deal.id);
     expect(store.get(deal.id)?.version).toBe(deal.version + 1);
     const other = find((d) => d.id !== deal.id && d.stage === StageId.Contacted);

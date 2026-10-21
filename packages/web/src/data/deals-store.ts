@@ -7,7 +7,7 @@ import type { ChangeEntry, Deal, DealId, Owner } from '@/types/deal';
 import type { DealChange, EditResult, SaveState } from '@/types/store';
 
 import { patchIsNoop, validatePatch } from './deal-rules';
-import { generateOwners } from './seed-data';
+import { OWNERS } from './owners';
 
 const HISTORY_LIMIT = 30;
 
@@ -27,7 +27,7 @@ interface Draft {
 }
 
 export class DealsStore {
-  readonly owners: ReadonlyArray<Owner> = generateOwners();
+  readonly owners: ReadonlyArray<Owner> = OWNERS;
   readonly zustand;
   private readonly history = new Map<DealId, ChangeEntry[]>();
   private readonly bootedAt = performance.now();
